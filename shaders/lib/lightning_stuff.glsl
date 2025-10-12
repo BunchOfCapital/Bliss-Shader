@@ -32,7 +32,7 @@ vec3 Iris_Lightningflash_VLcloud(vec3 feetPlayerPos, vec3 lightningBoltPos){
 if(lightningBoltPosition.w > 0.0){
 	vec3 LightningPos = feetPlayerPos - vec3(lightningBoltPosition.x, clamp(feetPlayerPos.y, lightningBoltPosition.y, lightningBoltPosition.y+116.0),lightningBoltPosition.z);
 
-	float lightDistance = 400.0;
+	float lightDistance = 200.0;
 	float lightningLight = max(1.0 - length(LightningPos) / lightDistance, 0.0);
 
 	lightningLight = exp((1.0 - lightningLight) * -10.0);
@@ -51,7 +51,7 @@ if(lightningBoltPosition.w > 0.0){
 		float lightningLight = max(1.0 - length(LightningPos) / 50, 0.0);
 		lightningLight = exp((1.0 - lightningLight) * -15.0) ;
 	#else
-        float lightDistance = 300.0;
+        float lightDistance = 200.0;
 		float lightningLight = max(1.0 - length(LightningPos) / lightDistance, 0.0) ;
 
 		lightningLight = exp((1.0 - lightningLight) * -15.0) ;

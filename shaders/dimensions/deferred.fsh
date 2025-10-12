@@ -216,7 +216,7 @@ float mixhistory = 0.06;
 	//////////////////////////////////////////////
 
 	// the idea is to store the 8 values, coverage + density of 3 cloud layers and 2 fog density values.
-	if (gl_FragCoord.x > 1 && gl_FragCoord.x < 4 && gl_FragCoord.y > 1 && gl_FragCoord.y < 4){
+	if (gl_FragCoord.x > 1 && gl_FragCoord.x < 5 && gl_FragCoord.y > 1 && gl_FragCoord.y < 4){
 		mixhistory = 10.0 * frameTime;
 
 		gl_FragData[0].rgb = writeSceneControllerParameters(gl_FragCoord.xy, parameters.smallCumulus, parameters.largeCumulus, parameters.altostratus, parameters.fog);

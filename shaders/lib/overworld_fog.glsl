@@ -16,6 +16,9 @@ float densityAtPosFog(in vec3 pos){
 float cloudVol(in vec3 pos, float maxDistance ){
 	
 	float fogYstart = FOG_START_HEIGHT+3;
+	#if defined OVERWORLD_SHADER && defined AETHER_FLAG
+		fogYstart = FOG_START_HEIGHT - 40;
+	#endif
 	vec3 samplePos = pos*vec3(1.0,1./24.,1.0);
 	vec3 samplePos2 = pos*vec3(1.0,1./48.,1.0);
 	
@@ -42,9 +45,9 @@ float cloudVol(in vec3 pos, float maxDistance ){
 		medium_gradientFog = 1.0;
 	}
 
-	FogDensities(medium_gradientFog, cloudyFog, rainyFog, maxDistance, 1.0, 1.0);
+	FogDensities(medium_gradientFog, cloudyFog, rainyFog, maxDistance, parameters.fog.x, parameters.fog.y);
 
-	return uniformFog + medium_gradientFog + cloudyFog;
+	return uniformFog + medium_gradientFog + cloudyFog + rainyFog;
 }
 
 float phaseRayleigh(float cosTheta) {
@@ -238,7 +241,7 @@ vec4 GetVolumetricFog(
 			#endif
 
 			vec3 Lightning = Iris_Lightningflash_VLfog(progressW-cameraPosition, lightningBoltPosition.xyz);
-			vec3 lighting = DirectLight + indirectLight;
+			vec3 lighting = DirectLight + indirectLight + Lightning;
 			
 			color += (lighting - lighting * fogVolumeCoeff) * totalAbsorbance;
 

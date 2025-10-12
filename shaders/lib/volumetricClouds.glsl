@@ -33,7 +33,7 @@ float getCloudShape(int LayerIndex, int LOD, in vec3 position, float minHeight, 
     	default : { break; }
 
         case SMALLCUMULUS_LAYER: {
-			coverage = parameters.smallCumulus.x;
+			coverage = mix(parameters.smallCumulus.x, Rain_coverage, rainStrength);
 
 			largeCloud = texture2D(noisetex, (samplePos.xz + cloud_movement)/5000.0 * CloudLayer0_scale).b;
 			smallCloud = 1.0-texture2D(noisetex, (samplePos.xz - cloud_movement)/500.0 * CloudLayer0_scale).r;
@@ -234,6 +234,7 @@ vec3 getCloudLighting(
 
 	vec3 directScattering = 6.28 * directLightCol * exp((beerCoef-1.0)*sunShadowMask) * (forwardscatter + backscatter);
 	vec3 indirectScattering = indirectLightCol * mix(1.0, exp2(-5.0*shape), indirectShadowMask*indirectShadowMask);
+	// vec3 lightningFlash = Iris_Lightningflash_VLcloud(,lightningBoltPosition.xyz);
 
 	// return indirectScattering;
 	// return directScattering;
@@ -377,8 +378,10 @@ vec4 raymarchCloud(
 
 					vec3 lighting = getCloudLighting(shapeWithDensity, shapeWithDensityFaded, sunShadowMask, sunScattering, indirectShadowMask, skyScattering * skylightOcclusion, backScatterPhase, phaseLevels);
 
+					#define LIGHTNINGFLASH_VL
 					#if defined LIGHTNINGFLASH_VL
-						lighting += createLightningPointLight(rayPosition - cameraPosition, lightningBoltPosition.xyz, shapeWithDensity, indirectShadowMask);
+					
+						lighting += Iris_Lightningflash_VLcloud(rayPosition - cameraPosition, lightningBoltPosition.xyz);
 					#endif
 
 					vec3 newPos = rayPosition - cameraPosition;

@@ -142,13 +142,18 @@ BECAUSE ADDING NEW ONES IS ALOT MORE COMPLEX AND REQUIRES KNOWING HOW TO CODE IN
 
 //=============== DECLARE UNIFORMS BELOW HERE ===============
 uniform int worldDay;
+uniform int worldTime;
+int weatherDay = int(mod(worldDay, 10));
+int TRANSITION_PERIOD = 1200; // 1 min
+int DAY_LENGTH = 24000;
+float transitionPhase = clamp(mod(worldTime - 1.0, DAY_LENGTH) - (DAY_LENGTH-TRANSITION_PERIOD), 1.0, TRANSITION_PERIOD) / TRANSITION_PERIOD; // not 0 to avoid 0div errors 
 //=============== DECLARE UNIFORMS ABOVE HERE ===============
 
 void applySceneControllerParameters(
 	out float smallCumulusCoverage, out float smallCumulusDensity,
 	out float largeCumulusCoverage, out float largeCumulusDensity,
 	out float altostratusCoverage, out float altostratusDensity,
-	out float fogA, out float fogB
+	out float uFog, out float cFog
 ){
     // these are the default parameters if no "trigger" or custom uniform is being used.
     // do not remove them
@@ -158,8 +163,23 @@ void applySceneControllerParameters(
     largeCumulusDensity = CloudLayer1_density;
 	altostratusCoverage = CloudLayer2_coverage;
     altostratusDensity = CloudLayer2_density;
-	fogA = 1.0;
-    fogB = 1.0;
+	uFog = 1.0;
+    cFog = 1.0;
+
+    #ifdef Daily_Weather
+        float daily_l0_coverage[10] = float[](DAY0_l0_coverage, DAY1_l0_coverage, DAY2_l0_coverage, DAY3_l0_coverage, DAY4_l0_coverage, DAY5_l0_coverage, DAY6_l0_coverage, DAY7_l0_coverage, DAY8_l0_coverage, DAY9_l0_coverage);
+        float daily_l1_coverage[10] = float[](DAY0_l1_coverage, DAY1_l1_coverage, DAY2_l1_coverage, DAY3_l1_coverage, DAY4_l1_coverage, DAY5_l1_coverage, DAY6_l1_coverage, DAY7_l1_coverage, DAY8_l1_coverage, DAY9_l1_coverage);
+        float daily_l2_coverage[10] = float[](DAY0_l2_coverage, DAY1_l2_coverage, DAY2_l2_coverage, DAY3_l2_coverage, DAY4_l2_coverage, DAY5_l2_coverage, DAY6_l2_coverage, DAY7_l2_coverage, DAY8_l2_coverage, DAY9_l2_coverage);
+
+        float daily_ufog_density[10] = float[](DAY0_ufog_density, DAY1_ufog_density, DAY2_ufog_density, DAY3_ufog_density, DAY4_ufog_density, DAY5_ufog_density, DAY6_ufog_density, DAY7_ufog_density, DAY8_ufog_density, DAY9_ufog_density);
+        float daily_cfog_density[10] = float[](DAY0_cfog_density, DAY1_cfog_density, DAY2_cfog_density, DAY3_cfog_density, DAY4_cfog_density, DAY5_cfog_density, DAY6_cfog_density, DAY7_cfog_density, DAY8_cfog_density, DAY9_cfog_density);
+
+        smallCumulusCoverage = mix(daily_l0_coverage[weatherDay], daily_l0_coverage[int(mod(weatherDay+1, 10))], transitionPhase);
+	    largeCumulusCoverage = mix(daily_l1_coverage[weatherDay], daily_l1_coverage[int(mod(weatherDay+1, 10))], transitionPhase);
+	    altostratusCoverage = mix(daily_l2_coverage[weatherDay], daily_l2_coverage[int(mod(weatherDay+1, 10))], transitionPhase);
+        uFog = mix(daily_ufog_density[weatherDay], daily_ufog_density[int(mod(weatherDay+1, 10))], transitionPhase);
+        cFog = mix(daily_cfog_density[weatherDay], daily_cfog_density[int(mod(weatherDay+1, 10))], transitionPhase);
+    #endif
 
 //=============== CONFIGURE CUSTOM SCENE PARAMETERS BELOW HERE ===============
 
@@ -208,7 +228,7 @@ vec3 writeSceneControllerParameters(
     
     /* (1,3) */ bool topLeft = uv.x > 1 && uv.x < 2 && uv.y > 3 && uv.y < 4;
     /* (2,3) */ bool topMiddle = uv.x > 2 && uv.x < 3 && uv.y > 3 && uv.y < 4;
-    // /* (3,3) */ bool topRight = uv.x > 3 && uv.x < 5 && uv.y > 3 && uv.y < 4;
+    /* (3,3) */ bool topRight = uv.x > 3 && uv.x < 5 && uv.y > 3 && uv.y < 4;
     // /* (1,2) */ bool middleLeft = uv.x > 1 && uv.x < 2 && uv.y > 2 && uv.y < 3;
     // /* (2,2) */ bool middleMiddle = uv.x > 2 && uv.x < 3 && uv.y > 2 && uv.y < 3;
     // /* (3,2) */ bool middleRight = uv.x > 3 && uv.x < 5 && uv.y > 2 && uv.y < 3;
@@ -220,8 +240,7 @@ vec3 writeSceneControllerParameters(
 
     if(topLeft) data = vec3(smallCumulus.xy, largeCumulus.x);
     if(topMiddle) data = vec3(largeCumulus.y, altostratus.xy);
-
-    // if(topRight)  	 data = vec4(groundSunColor,fogSunColor.r);
+    if(topRight) data = vec3(fog.x, fog.y, 0.0);
     // if(middleLeft)   data = vec4(groundAmbientColor,fogSunColor.g);
     // if(middleMiddle) data = vec4(fogAmbientColor,fogSunColor.b);
     // if(middleRight)  data = vec4(cloudSunColor,cloudAmbientColor.r);
@@ -244,9 +263,10 @@ void readSceneControllerParameters(
     // 4th compnent/alpha is storing 1/4 res depth so i cant store there lol
 	vec3 data1 = texelFetch2D(colortex,ivec2(1,3),0).rgb/150.0;
 	vec3 data2 = texelFetch2D(colortex,ivec2(2,3),0).rgb/150.0;
+    vec3 data3 = texelFetch2D(colortex,ivec2(3,3),0).rgb/150.0;
 
 	smallCumulus = vec2(data1.x,data1.y);
 	largeCumulus = vec2(data1.z,data2.x);
 	altostratus = vec2(data2.y,data2.z);
-	fog = vec2(0.0);
+	fog = vec2(data3.x, data3.y);
 }

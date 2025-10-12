@@ -1067,8 +1067,9 @@ void main() {
 
 		float LM_shadowMapFallback =  clamp(lightmap.y, 0.0,1.0);
 
-		float LightningPhase = 0.0;
+		float LightningPhase = 0.5;
 		vec3 LightningFlashLighting = Iris_Lightningflash(feetPlayerPos, lightningBoltPosition.xyz, slopednormal, LightningPhase) * pow(lightmap.y,10);
+		DirectLightColor += LightningFlashLighting;
 
 		NdotL = clamp((-15 + dot(slopednormal, WsunVec)*255.0) / 240.0  ,0.0,1.0);
 
@@ -1155,8 +1156,8 @@ void main() {
 			if(isEyeInWater != 1) SSSColor *= lightLeakFix;
 			
 			float cloudShadows = GetCloudShadow(feetPlayerPos.xyz + cameraPosition, WsunVec);
-			shadowColor *= cloudShadows;
-			SSSColor *= cloudShadow*cloudShadows;
+			shadowColor *= mix(cloudShadow*cloudShadows, 1.0, clamp(LightningFlashLighting.x + LightningFlashLighting.y + LightningFlashLighting.z, 0.0, 1.0) );
+			SSSColor *= mix(cloudShadow*cloudShadows, 1.0, clamp(LightningFlashLighting.x + LightningFlashLighting.y + LightningFlashLighting.z, 0.0, 1.0) );
 
 		#endif
 	#endif
